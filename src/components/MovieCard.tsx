@@ -1,12 +1,14 @@
 import { Star } from "lucide-react";
-import { Movie } from "@/data/movies";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Movie } from "@/hooks/useMovies";
 
 interface MovieCardProps {
   movie: Movie;
+  onBookNow?: () => void;
 }
 
-const MovieCard = ({ movie }: MovieCardProps) => {
+const MovieCard = ({ movie, onBookNow }: MovieCardProps) => {
   return (
     <div className="group cursor-pointer animate-fade-in">
       {/* Poster Container */}
@@ -14,7 +16,7 @@ const MovieCard = ({ movie }: MovieCardProps) => {
         {/* Poster Image */}
         <div className="aspect-[2/3] overflow-hidden">
           <img
-            src={movie.poster}
+            src={movie.localPoster || movie.poster_url || ""}
             alt={movie.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
@@ -31,9 +33,19 @@ const MovieCard = ({ movie }: MovieCardProps) => {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Hover Details */}
+        {/* Hover Details with Book Button */}
         <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <p className="text-sm text-muted-foreground">{movie.duration} • {movie.language}</p>
+          <p className="text-sm text-muted-foreground mb-2">{movie.duration} • {movie.language}</p>
+          <Button 
+            size="sm" 
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBookNow?.();
+            }}
+          >
+            Book Now
+          </Button>
         </div>
       </div>
 
@@ -43,7 +55,7 @@ const MovieCard = ({ movie }: MovieCardProps) => {
           {movie.title}
         </h3>
         <div className="flex flex-wrap gap-1.5">
-          {movie.genre.map((g) => (
+          {movie.genre?.map((g) => (
             <Badge key={g} variant="secondary" className="text-xs">
               {g}
             </Badge>
