@@ -1,25 +1,46 @@
 import { useState } from "react";
-import { Search, Menu, X, MapPin } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Search, Menu, X, MapPin, User, LogOut, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const getInitials = (email: string) => {
+    return email.slice(0, 2).toUpperCase();
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-xl">B</span>
             </div>
             <span className="text-xl font-bold text-foreground hidden sm:block">
               BookMyShow
             </span>
-          </div>
+          </Link>
 
           {/* Search Bar - Desktop */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
@@ -43,10 +64,42 @@ const Navbar = () => {
               <span>Mumbai</span>
             </Button>
 
-            {/* Sign In Button */}
-            <Button variant="default" className="hidden sm:flex">
-              Sign In
-            </Button>
+            {/* Auth Section */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getInitials(user.email || "U")}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{user.user_metadata?.full_name || "User"}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/my-bookings")}>
+                    <Ticket className="mr-2 h-4 w-4" />
+                    My Bookings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="default" onClick={() => navigate("/auth")} className="hidden sm:flex">
+                Sign In
+              </Button>
+            )}
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -78,9 +131,22 @@ const Navbar = () => {
                 <MapPin className="w-4 h-4 mr-2" />
                 Mumbai
               </Button>
-              <Button variant="default" className="w-full">
-                Sign In
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="ghost" className="justify-start" onClick={() => navigate("/my-bookings")}>
+                    <Ticket className="w-4 h-4 mr-2" />
+                    My Bookings
+                  </Button>
+                  <Button variant="destructive" className="w-full" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button variant="default" className="w-full" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+              )}
             </div>
           </div>
         )}
