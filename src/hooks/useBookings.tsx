@@ -2,10 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type Booking = Tables<"bookings">;
-export type BookingInsert = TablesInsert<"bookings">;
+
+type BookingInsert = {
+  movie_id: string;
+  booking_time: string;
+  seat_number?: string | null;
+  status?: "pending" | "confirmed" | "paid" | "cancelled";
+  amount?: number | null;
+  theater_id?: string | null;
+  showtime_id?: string | null;
+};
 
 export const useBookings = () => {
   const { user } = useAuth();
@@ -25,6 +34,16 @@ export const useBookings = () => {
             poster_url,
             duration,
             language
+          ),
+          theaters (
+            id,
+            name,
+            location
+          ),
+          showtimes (
+            id,
+            show_time,
+            price
           )
         `)
         .eq("user_id", user.id)
