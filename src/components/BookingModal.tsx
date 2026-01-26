@@ -302,34 +302,59 @@ const BookingModal = ({ movie, isOpen, onClose }: BookingModalProps) => {
               </Badge>
             </div>
 
-            {/* Date Selection */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+            {/* Date Selection - Enhanced Horizontal Scroll */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-base font-semibold">
+                <Calendar className="w-5 h-5 text-primary" />
                 Select Date
               </Label>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {dates.map((date) => (
-                  <button
-                    key={date.toISOString()}
-                    onClick={() => setSelectedDate(date)}
-                    className={`flex flex-col items-center px-4 py-2 rounded-lg border transition-colors min-w-[70px] ${
-                      format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary border-border hover:border-primary"
-                    }`}
-                  >
-                    <span className="text-xs">{format(date, "EEE")}</span>
-                    <span className="text-lg font-bold">{format(date, "d")}</span>
-                    <span className="text-xs">{format(date, "MMM")}</span>
-                  </button>
-                ))}
+              <div className="relative">
+                {/* Gradient fade indicators for scroll */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-card to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none" />
+                
+                <div className="flex gap-2 overflow-x-auto pb-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent scroll-smooth snap-x snap-mandatory">
+                  {dates.map((date, index) => {
+                    const isSelected = format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+                    const isToday = format(new Date(), "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+                    
+                    return (
+                      <button
+                        key={date.toISOString()}
+                        onClick={() => setSelectedDate(date)}
+                        className={`
+                          relative flex flex-col items-center px-4 py-3 rounded-xl border-2 transition-all duration-200 
+                          min-w-[80px] flex-shrink-0 snap-center
+                          ${isSelected
+                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25 scale-105"
+                            : "bg-secondary/50 border-border hover:border-primary/50 hover:bg-secondary"
+                          }
+                        `}
+                      >
+                        {isToday && (
+                          <span className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                            isSelected ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
+                          }`}>
+                            Today
+                          </span>
+                        )}
+                        <span className={`text-xs font-medium uppercase tracking-wide ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                          {format(date, "EEE")}
+                        </span>
+                        <span className="text-2xl font-bold my-1">{format(date, "d")}</span>
+                        <span className={`text-xs ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                          {format(date, "MMM")}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* Theaters and Showtimes */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2 border-b border-border pb-3">
                 <MapPin className="w-5 h-5 text-primary" />
                 Theaters Showing {movie.title}
               </h2>
@@ -340,35 +365,47 @@ const BookingModal = ({ movie, isOpen, onClose }: BookingModalProps) => {
                   <span className="ml-2 text-muted-foreground">Loading showtimes...</span>
                 </div>
               ) : groupedShowtimes.length === 0 ? (
-                <div className="text-center py-8 bg-secondary rounded-lg">
-                  <p className="text-muted-foreground">No showtimes available for this date.</p>
-                  <p className="text-sm text-muted-foreground mt-1">Try selecting a different date.</p>
+                <div className="text-center py-8 bg-secondary/50 rounded-lg border border-dashed border-border">
+                  <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground font-medium">No showtimes available</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try selecting a different date above</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {groupedShowtimes.map(({ theater, showtimes }) => (
-                    <div key={theater.id} className="bg-secondary rounded-lg p-4 space-y-3">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{theater.name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {theater.location}
-                        </p>
+                    <div key={theater.id} className="bg-secondary/50 rounded-xl p-4 space-y-4 border border-border/50">
+                      {/* Theater Info */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-foreground text-lg">{theater.name}</h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3" />
+                            {theater.location}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {showtimes.length} {showtimes.length === 1 ? "show" : "shows"}
+                        </Badge>
                       </div>
                       
-                      <div className="flex flex-wrap gap-2">
-                        {showtimes.map((showtime) => (
-                          <Button
-                            key={showtime.id}
-                            variant="outline"
-                            size="sm"
-                            className="flex flex-col h-auto py-2 px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                            onClick={() => handleSelectShowtime(showtime)}
-                          >
-                            <span className="font-semibold">{formatShowTime(showtime.show_time)}</span>
-                            <span className="text-xs text-muted-foreground">₹{showtime.price}</span>
-                          </Button>
-                        ))}
+                      {/* Showtimes - Horizontal Scroll */}
+                      <div className="relative">
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                          {showtimes.map((showtime) => (
+                            <Button
+                              key={showtime.id}
+                              variant="outline"
+                              className="flex flex-col h-auto py-3 px-5 min-w-[100px] flex-shrink-0 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 group"
+                              onClick={() => handleSelectShowtime(showtime)}
+                            >
+                              <Clock className="w-4 h-4 mb-1 text-muted-foreground group-hover:text-primary-foreground" />
+                              <span className="font-bold text-base">{formatShowTime(showtime.show_time)}</span>
+                              <span className="text-xs text-muted-foreground group-hover:text-primary-foreground/80 mt-1">
+                                ₹{showtime.price}
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
