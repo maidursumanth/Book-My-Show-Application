@@ -19,6 +19,14 @@ const posterMap: Record<string, string> = {
   movie6,
 };
 
+const posterFallbacks = [movie1, movie2, movie3, movie4, movie5, movie6];
+
+const getStableFallbackPoster = (movie: Tables<"movies">) => {
+  const key = `${movie.id}-${movie.title}`;
+  const hash = Array.from(key).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return posterFallbacks[hash % posterFallbacks.length];
+};
+
 // Fallback local movie data when DB is unreachable
 const fallbackMovies: Movie[] = [
   { id: "local-1", title: "Shadow Strike", poster_url: "movie1", genre: ["Action", "Thriller"], rating: 8.5, language: "English", release_date: "2025-01-15", duration: "2h 15m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie1 },
@@ -35,7 +43,7 @@ export type Movie = Tables<"movies"> & {
 
 const mapMoviePoster = (movie: Tables<"movies">): Movie => ({
   ...movie,
-  localPoster: posterMap[movie.poster_url || ""] || movie.poster_url,
+  localPoster: posterMap[movie.poster_url || ""] || getStableFallbackPoster(movie),
 });
 
 export const useMovies = () => {
