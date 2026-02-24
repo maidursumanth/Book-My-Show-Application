@@ -19,9 +19,24 @@ const posterMap: Record<string, string> = {
   movie6,
 };
 
+// Fallback local movie data when DB is unreachable
+const fallbackMovies: Movie[] = [
+  { id: "local-1", title: "Shadow Strike", poster_url: "movie1", genre: ["Action", "Thriller"], rating: 8.5, language: "English", release_date: "2025-01-15", duration: "2h 15m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie1 },
+  { id: "local-2", title: "Paris Hearts", poster_url: "movie2", genre: ["Romance", "Comedy"], rating: 7.8, language: "English", release_date: "2025-01-20", duration: "1h 55m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie2 },
+  { id: "local-3", title: "The Haunting", poster_url: "movie3", genre: ["Horror", "Mystery"], rating: 7.2, language: "English", release_date: "2025-01-10", duration: "2h 05m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie3 },
+  { id: "local-4", title: "Magic Kingdom", poster_url: "movie4", genre: ["Animation", "Family"], rating: 8.9, language: "English", release_date: "2025-01-25", duration: "1h 45m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie4 },
+  { id: "local-5", title: "Galactic Voyage", poster_url: "movie5", genre: ["Sci-Fi", "Adventure"], rating: 8.1, language: "English", release_date: "2025-02-01", duration: "2h 30m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie5 },
+  { id: "local-6", title: "The Champion", poster_url: "movie6", genre: ["Drama", "Sports"], rating: 8.7, language: "English", release_date: "2025-01-28", duration: "2h 10m", is_active: true, description: null, created_at: "", updated_at: "", localPoster: movie6 },
+];
+
 export type Movie = Tables<"movies"> & {
   localPoster?: string;
 };
+
+const mapMoviePoster = (movie: Tables<"movies">): Movie => ({
+  ...movie,
+  localPoster: posterMap[movie.poster_url || ""] || movie.poster_url,
+});
 
 export const useMovies = () => {
   return useQuery({
@@ -33,14 +48,16 @@ export const useMovies = () => {
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Failed to fetch movies from DB, using fallback:", error.message);
+        return fallbackMovies;
+      }
 
-      // Map poster_url to local assets
-      return (data || []).map((movie) => ({
-        ...movie,
-        localPoster: posterMap[movie.poster_url || ""] || movie.poster_url,
-      }));
+      if (!data || data.length === 0) return fallbackMovies;
+
+      return data.map(mapMoviePoster);
     },
+    retry: 1,
   });
 };
 
@@ -54,15 +71,16 @@ export const useMovie = (id: string) => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        const fallback = fallbackMovies.find((m) => m.id === id);
+        return fallback || null;
+      }
       if (!data) return null;
 
-      return {
-        ...data,
-        localPoster: posterMap[data.poster_url || ""] || data.poster_url,
-      };
+      return mapMoviePoster(data);
     },
     enabled: !!id,
+    retry: 1,
   });
 };
 
@@ -77,12 +95,15 @@ export const useFeaturedMovies = () => {
         .order("rating", { ascending: false })
         .limit(3);
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Failed to fetch featured movies, using fallback:", error.message);
+        return fallbackMovies.slice(0, 3);
+      }
 
-      return (data || []).map((movie) => ({
-        ...movie,
-        localPoster: posterMap[movie.poster_url || ""] || movie.poster_url,
-      }));
+      if (!data || data.length === 0) return fallbackMovies.slice(0, 3);
+
+      return data.map(mapMoviePoster);
     },
+    retry: 1,
   });
 };
