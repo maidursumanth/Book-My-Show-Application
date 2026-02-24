@@ -50,20 +50,25 @@ export const useMovies = () => {
   return useQuery({
     queryKey: ["movies"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("movies")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("movies")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.warn("Failed to fetch movies from DB, using fallback:", error.message);
+        if (error) {
+          console.warn("Failed to fetch movies from DB, using fallback:", error.message);
+          return fallbackMovies;
+        }
+
+        if (!data || data.length === 0) return fallbackMovies;
+
+        return data.map(mapMoviePoster);
+      } catch (error) {
+        console.warn("Movies request failed, using fallback:", error);
         return fallbackMovies;
       }
-
-      if (!data || data.length === 0) return fallbackMovies;
-
-      return data.map(mapMoviePoster);
     },
     retry: 1,
   });
@@ -73,19 +78,26 @@ export const useMovie = (id: string) => {
   return useQuery({
     queryKey: ["movie", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("movies")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("movies")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
 
-      if (error) {
+        if (error) {
+          const fallback = fallbackMovies.find((m) => m.id === id);
+          return fallback || null;
+        }
+
+        if (!data) return null;
+
+        return mapMoviePoster(data);
+      } catch (error) {
+        console.warn("Movie request failed, using fallback:", error);
         const fallback = fallbackMovies.find((m) => m.id === id);
         return fallback || null;
       }
-      if (!data) return null;
-
-      return mapMoviePoster(data);
     },
     enabled: !!id,
     retry: 1,
@@ -96,21 +108,26 @@ export const useFeaturedMovies = () => {
   return useQuery({
     queryKey: ["featured-movies"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("movies")
-        .select("*")
-        .eq("is_active", true)
-        .order("rating", { ascending: false })
-        .limit(3);
+      try {
+        const { data, error } = await supabase
+          .from("movies")
+          .select("*")
+          .eq("is_active", true)
+          .order("rating", { ascending: false })
+          .limit(3);
 
-      if (error) {
-        console.warn("Failed to fetch featured movies, using fallback:", error.message);
+        if (error) {
+          console.warn("Failed to fetch featured movies, using fallback:", error.message);
+          return fallbackMovies.slice(0, 3);
+        }
+
+        if (!data || data.length === 0) return fallbackMovies.slice(0, 3);
+
+        return data.map(mapMoviePoster);
+      } catch (error) {
+        console.warn("Featured movies request failed, using fallback:", error);
         return fallbackMovies.slice(0, 3);
       }
-
-      if (!data || data.length === 0) return fallbackMovies.slice(0, 3);
-
-      return data.map(mapMoviePoster);
     },
     retry: 1,
   });
